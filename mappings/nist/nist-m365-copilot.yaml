@@ -1,0 +1,56 @@
+# NIST Cybersecurity Framework Mapping for Copilot Security Controls
+# Version: 2.0
+
+identify:
+  asset_management:
+    - control: "SharePoint Site Inventory"
+      implementation: "Get-SPOSite audit script"
+      copilot_specific: true
+    - control: "Data Classification"
+      implementation: "Sensitivity Labels"
+      copilot_specific: true
+      
+  risk_assessment:
+    - control: "AI/ML Risk Assessment"
+      implementation: "Copilot-specific threat modeling"
+      reference: "NIST AI Risk Management Framework"
+      
+protect:
+  access_control:
+    - control: "Least Privilege Access"
+      implementation: "Restricted SharePoint Search"
+      copilot_specific: true
+    - control: "Identity Verification"
+      implementation: "Conditional Access + MFA"
+      
+  data_security:
+    - control: "Data-at-Rest Encryption"
+      implementation: "Sensitivity Labels with encryption"
+    - control: "Data-in-Transit Encryption"
+      implementation: "TLS 1.2+ for all Copilot communications"
+      
+  information_protection:
+    - control: "DLP Policies"
+      implementation: "Copilot-specific DLP location"
+      copilot_specific: true
+      
+detect:
+  anomalies_and_events:
+    - control: "Behavioral Analytics"
+      implementation: "Sentinel KQL queries for Copilot"
+      copilot_specific: true
+      
+  continuous_monitoring:
+    - control: "Audit Logging"
+      implementation: "Unified Audit Log + Copilot events"
+      
+respond:
+  response_planning:
+    - control: "Incident Response for AI"
+      implementation: "Copilot-specific playbooks"
+      copilot_specific: true
+      
+recover:
+  recovery_planning:
+    - control: "Rollback Procedures"
+      implementation: "License removal scripts"

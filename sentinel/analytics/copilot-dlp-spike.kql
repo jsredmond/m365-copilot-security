@@ -1,0 +1,87 @@
+// Copilot Security Monitoring Workbook
+// KQL Queries for Microsoft Sentinel
+
+// Query 1: Monitor Copilot Access to Sensitive Data
+let SensitiveLabels = dynamic(["HighlyConfidential", "Restricted", "PersonalData"]);
+let TimeRange = 7d;
+OfficeActivity
+| where TimeGenerated > ago(TimeRange)
+| where Operation contains "Copilot" or UserAgent contains "Copilot"
+| join kind=inner (
+    InformationProtectionLogs_CL
+    | where SensitivityLabel in (SensitiveLabels)
+) on ItemId
+| summarize 
+    AccessCount = count(),
+    UniqueUsers = dcount(UserId),
+    SensitiveFiles = make_set(FileName)
+    by bin(TimeGenerated, 1h), SensitivityLabel
+| render timechart
+
+// Query 2: Detect Anomalous Copilot Usage Patterns
+let BaselineWindow = 30d;
+let DetectionWindow = 1d;
+let AnomalyThreshold = 2.5; // Standard deviations
+CopilotActivity_CL
+| where TimeGenerated between (ago(BaselineWindow) .. ago(DetectionWindow))
+| summarize 
+    BaselineAvg = avg(QueryCount),
+    BaselineStdDev = stdev(QueryCount)
+    by UserId
+| join kind=inner (
+    CopilotActivity_CL
+    | where TimeGenerated > ago(DetectionWindow)
+    | summarize CurrentQueryCount = count() by UserId
+) on UserId
+| where CurrentQueryCount > (BaselineAvg + (BaselineStdDev * AnomalyThreshold))
+| project 
+    UserId,
+    CurrentQueryCount,
+    BaselineAvg,
+    AnomalyScore = (CurrentQueryCount - BaselineAvg) / BaselineStdDev,
+    AlertSeverity = case(
+        AnomalyScore > 5, "High",
+        AnomalyScore > 3, "Medium",
+        "Low"
+    )
+
+// Query 3: Track DLP Policy Violations in Copilot
+DLPPolicyEvents
+| where TimeGenerated > ago(7d)
+| where Location == "Microsoft365Copilot"
+| summarize 
+    ViolationCount = count(),
+    UniqueUsers = dcount(UserId),
+    BlockedContent = countif(Action == "Blocked"),
+    WarnedContent = countif(Action == "Warned")
+    by PolicyName, bin(TimeGenerated, 1d)
+| order by TimeGenerated desc
+
+// Query 4: Copilot Data Exfiltration Detection
+let SuspiciousThreshold = 100; // Files accessed in 1 hour
+OfficeActivity
+| where TimeGenerated > ago(1h)
+| where Operation contains "Copilot" and Operation contains "FileAccessed"
+| summarize 
+    FilesAccessed = count(),
+    UniqueFiles = dcount(OfficeObjectId),
+    DataVolume = sum(FileSize)
+    by UserId, bin(TimeGenerated, 10m)
+| where FilesAccessed > SuspiciousThreshold
+| join kind=inner (
+    IdentityInfo
+    | project UserId = AccountUPN, Department, JobTitle, Manager
+) on UserId
+| project-away UserId1
+
+// Query 5: Cross-Tenant Access Monitoring
+AADSignInLogs
+| where TimeGenerated > ago(24h)
+| where AppDisplayName contains "Copilot"
+| where HomeTenantId != ResourceTenantId
+| extend GeoLocation = tostring(LocationDetails.countryOrRegion)
+| summarize 
+    CrossTenantAttempts = count(),
+    UniqueUsers = dcount(UserPrincipalName),
+    Locations = make_set(GeoLocation)
+    by HomeTenantId, ResourceTenantId, ResultType

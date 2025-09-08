@@ -1,0 +1,88 @@
+{
+  "name": "Copilot-DataProtection-Policy",
+  "description": "Comprehensive DLP policy for Microsoft 365 Copilot",
+  "version": "2.0",
+  "locations": ["Microsoft365Copilot"],
+  "rules": [
+    {
+      "name": "Block-HighlyConfidential-Summarization",
+      "priority": 1,
+      "conditions": {
+        "operator": "AND",
+        "conditions": [
+          {
+            "type": "SensitivityLabel",
+            "labels": ["HighlyConfidential", "RestrictedAccess"],
+            "operator": "Contains"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "type": "BlockResponseSummarization",
+          "notification": {
+            "enabled": true,
+            "message": "This content contains highly confidential information and cannot be summarized by Copilot."
+          }
+        }
+      ],
+      "mode": "Enforced"
+    },
+    {
+      "name": "Block-PersonalData-Processing",
+      "priority": 2,
+      "conditions": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "type": "SensitiveInformationType",
+            "types": ["SSN", "CreditCard", "HealthRecord"],
+            "minCount": 1,
+            "confidence": 85
+          },
+          {
+            "type": "SensitivityLabel",
+            "labels": ["PersonalData", "PII"],
+            "operator": "Contains"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "type": "BlockResponseSummarization",
+          "auditEnabled": true
+        }
+      ],
+      "mode": "Enforced"
+    },
+    {
+      "name": "Warn-Confidential-Usage",
+      "priority": 3,
+      "conditions": {
+        "type": "SensitivityLabel",
+        "labels": ["Confidential"],
+        "operator": "Contains"
+      },
+      "actions": [
+        {
+          "type": "WarnUser",
+          "message": "This content is confidential. Ensure you're sharing Copilot responses appropriately.",
+          "requireAcknowledgement": true
+        }
+      ],
+      "mode": "Enforced"
+    }
+  ],
+  "settings": {
+    "alerts": {
+      "enabled": true,
+      "severity": "High",
+      "recipients": ["security-team@contoso.com"],
+      "frequency": "Immediate"
+    },
+    "incident": {
+      "createIncident": true,
+      "assignTo": "DLPAdmins@contoso.com"
+    }
+  }
+}

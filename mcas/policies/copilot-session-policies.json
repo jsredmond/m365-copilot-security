@@ -1,0 +1,41 @@
+{
+  "name": "Copilot-MDCA-Policies",
+  "version": "2.0",
+  "policies": [
+    {
+      "name": "Block-Copilot-UnmanagedDevices",
+      "type": "Session",
+      "apps": ["Microsoft 365 Copilot"],
+      "conditions": {
+        "device": {
+          "managed": false,
+          "compliant": false
+        }
+      },
+      "actions": {
+        "block": true,
+        "notification": "Copilot access requires a managed device"
+      }
+    },
+    {
+      "name": "Monitor-Copilot-MassDownload",
+      "type": "Activity",
+      "apps": ["SharePoint Online", "OneDrive"],
+      "conditions": {
+        "activity": "FileDownload",
+        "threshold": {
+          "count": 50,
+          "timeWindow": "1 hour"
+        },
+        "userAgent": "contains('Copilot')"
+      },
+      "actions": {
+        "alert": {
+          "severity": "High",
+          "recipients": ["soc@contoso.com"]
+        },
+        "suspend": true
+      }
+    }
+  ]
+}
