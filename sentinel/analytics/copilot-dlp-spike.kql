@@ -1,8 +1,0 @@
-// Example analytics query for Copilot-related DLP spikes
-// Adjust table names based on your connector sources.
-
-SecurityAlert
-| where ProductName has "Data Loss Prevention"
-| where Title has_any ("Copilot", "Microsoft 365 Copilot")
-| summarize Alerts=count(), Users=dcount(Entities) by bin(TimeGenerated, 1h)
-| where Alerts > 5
